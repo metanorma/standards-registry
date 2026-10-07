@@ -1,0 +1,90 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# registry-validate: validate any candidate catalog against the registry
+# contract (TODO.improvements/09). Schema conformance plus the
+# catalog-internal cross-field rules shared with rake validate_consistency
+# (projection recompute, file shape, URL/edition invariants).
+#
+#   registry-validate catalog.json [--schema DIR] [--files DIR]
+#                     [--urn-namespace NS] [--docs-prefix PREFIX]
+#
+# --files verifies bytes and sha256 against artifacts on disk.
+# Exit 0 = conformant.
+
+require "optparse"
+require "json"
+
+gem_root = File.expand_path("..", __dir__)
+$LOAD_PATH.unshift(File.join(gem_root, "lib"))
+require "registry"
+require "json_schemer"
+
+options = { schema_dir: File.join(gem_root, "schema") }
+parser = OptionParser.new do |opts|
+  opts.banner = "Usage: registry-validate INDEX [options]"
+  opts.on("--schema DIR", "Schema directory (default: bundled)") { |v| options[:schema_dir] = v }
+  opts.on("--files DIR", "Verify bytes/sha256 against artifact files under DIR") { |v| options[:files] = v }
+  opts.on("--urn-namespace NS", "Assert urns live in this namespace") { |v| options[:urn_namespace] = v }
+  opts.on("--docs-prefix PREFIX", "Artifact URL prefix (default /docs)") { |v| options[:docs_prefix] = v }
+end
+parser.parse!
+
+index_path = ARGV.shift
+if index_path.nil? || !File.file?(index_path)
+  warn parser.banner
+  exit 64
+end
+
+payload = JSON.parse(File.read(index_path))
+failures = []
+entry_count = (payload["items"] || payload["documents"] || []).length
+
+conformant_label = nil
+schema_errors = [
+  ["catalog", "documents-index.schema.json"],
+  ["search index", "search-index.schema.json"],
+].map do |label, schema_file|
+  schema = JSON.parse(File.read(File.join(options[:schema_dir], schema_file)))
+  [label, JSONSchemer.schema(schema).validate(payload).map { |e| e["error"] }]
+end
+
+passing = schema_errors.find { |_, errors| errors.empty? }
+conformant_label = passing && passing.first
+unless conformant_label
+  schema_errors.each do |label, errors|
+    failures << "schema (#{label}): #{errors.first(3).join('; ')}" unless errors.empty?
+  end
+end
+
+if conformant_label
+  rules = Registry::CatalogRules.new(
+    urn_namespace: options[:urn_namespace],
+    docs_prefix: options[:docs_prefix] || "/docs"
+  )
+  rules.check("items" => payload["items"] || payload["documents"] || [])
+  failures.concat(rules.problems)
+
+  if options[:files] && payload["items"]
+    require "digest"
+    prefix = options[:docs_prefix] || "/docs"
+    payload["items"].each do |item|
+      item["files"].each do |file|
+        abs = File.join(options[:files], file["url"].delete_prefix("#{prefix}/"))
+        unless File.file?(abs)
+          failures << "items[#{item['slug']}].files: #{file['url']} not found under #{options[:files]}"
+          next
+        end
+
+        failures << "items[#{item['slug']}].files[#{file['format']}]: bytes mismatch" if File.size(abs) != file["bytes"]
+        failures << "items[#{item['slug']}].files[#{file['format']}]: sha256 mismatch" if Digest::SHA256.file(abs).hexdigest != file["sha256"]
+      end
+    end
+  end
+else
+  failures.unshift("#{index_path}: conforms to no bundled schema (documents-index/search-index v1)")
+end
+
+failures.each { |failure| warn "FAIL: #{failure}" }
+puts "#{index_path}: #{entry_count} entries — #{conformant_label || 'invalid payload'}, #{failures.length} failures"
+exit(failures.empty? ? 0 : 1)

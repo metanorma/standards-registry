@@ -1,0 +1,104 @@
+name: registry-build
+
+# Reusable registry build + certification workflow. An instance calls it
+# with its own renderer as a config step (TODO.improvements/11, 12):
+#
+#   jobs:
+#     build:
+#       uses: metanorma/standards-registry/.github/workflows/registry-build.yml@main
+#       with:
+#         enrich: bundle exec rake enrich
+#         renderer: bundle exec rake jekyll
+#         site-dir: _site
+#       secrets:
+#         github-token: ${{ secrets.GITHUB_TOKEN }}
+
+on:
+  workflow_call:
+    inputs:
+      ruby-version:
+        description: Ruby version for the engine
+        required: false
+        default: "3.3"
+        type: string
+      node-version:
+        description: Node version for the renderer
+        required: false
+        default: "24"
+        type: string
+      enrich:
+        description: Command that produces registry/catalog.json (the engine handoff)
+        required: false
+        default: bundle exec rake enrich
+        type: string
+      renderer:
+        description: Renderer build command (pluggable; produces the site)
+        required: true
+        type: string
+      site-dir:
+        description: Built site directory to certify
+        required: false
+        default: _site
+        type: string
+      docs-dir:
+        description: Directory holding the artifacts (for checksum verification)
+        required: false
+        default: _site/docs
+        type: string
+      conformance-args:
+        description: Extra registry-conformance args (e.g. --no-html for headless)
+        required: false
+        default: ""
+        type: string
+    secrets:
+      github-token:
+        description: Token for aggregation (producer step, if run by the instance)
+        required: false
+
+jobs:
+  build-and-certify:
+    name: Build + certify registry
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+          ruby-version: ${{ inputs.ruby-version }}
+
+      - name: Produce the registry handoff (enrich)
+        env:
+          GITHUB_TOKEN: ${{ secrets.github-token }}
+        run: ${{ inputs.enrich }}
+
+      - name: Build with the configured renderer
+        run: ${{ inputs.renderer }}
+
+      - name: Guard — catalog must be non-empty
+        run: |
+          count=$(python3 -c "import json; print(len(json.load(open('registry/catalog.json')).get('items',[])))")
+          if [ "$count" -eq 0 ]; then echo "::error::Empty catalog — aborting"; exit 1; fi
+          echo "Catalog: $count documents"
+
+      - name: Certify the built site
+        run: |
+          bin="registry-conformance"
+          gem_bin="$(bundle exec ruby -e 'print Gem.loaded_specs[\"standards-registry\"].full_gem_path rescue nil')"
+          [ -n "$gem_bin" ] && bin="$gem_bin/bin/registry-conformance"
+          "$bin" check ${{ inputs.site-dir }} \
+            --expect registry/catalog.json \
+            --schema "$(bundle exec ruby -r registry -e 'print Registry::Config.new.schema_path')" \
+            ${{ inputs.conformance-args }}
+
+      - name: Verify artifact checksums
+        run: |
+          gem_bin="$(bundle exec ruby -e 'print Gem.loaded_specs["standards-registry"].full_gem_path rescue nil')"
+          [ -n "$gem_bin" ] || gem_bin="."
+          "$gem_bin/bin/registry-validate" registry/catalog.json \
+            --files ${{ inputs.docs-dir }} \
+            --urn-namespace "$(bundle exec ruby -ryaml -e 'print (YAML.load_file("_config.yml")["registry"] || {})["urn_namespace"]')"

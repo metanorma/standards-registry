@@ -1,0 +1,13 @@
+registry:
+  org: fixture
+  urn_namespace: fixture
+  url_scheme: "/docs/:document_id/:year/"
+  docs_prefix: "/docs"
+  legacy_prefixes: []
+  features:
+    search: true
+    atom_feed: true
+    jsonld: true
+    opensearch: true
+    html: true
+  license_default: null

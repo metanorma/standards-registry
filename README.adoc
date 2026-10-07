@@ -1,0 +1,79 @@
+= standards-registry
+
+The registry engine for standards organizations using Metanorma:
+one contract, many producers, many renderers.
+
+image:https://github.com/metanorma/standards-registry/actions/workflows/ci.yml/badge.svg[CI, link="https://github.com/metanorma/standards-registry/actions/workflows/ci.yml"]
+
+== What this is
+
+Every standards organization that publishes Metanorma documents wants the
+same thing: an aggregated, citable, machine-readable registry of its
+deliverables, and a site to serve it. This repository is the shared
+engine — an *instance* of it contributes configuration, branding and
+content, never engine code.
+
+The three pieces:
+
+[cols="1,3"]
+|===
+|Piece |What it is
+|Contract |`schema/documents-index.schema.json` — the versioned catalog payload
+         (`$id: https://schemas.metanorma.org/registry/documents-index/v1.json`)
+         and `schema/search-index.schema.json` for the derived search view.
+         **Any generator conforming to the schema is a valid producer.**
+|Engine |`lib/registry` — post-aggregation enrichment: Relaton is the canonical
+         record, top-level fields are documented projections, artifacts carry
+         `media_type`/`bytes`/`sha256` and stable URLs, items carry provenance,
+         language/license/copyright, URNs and the editions model.
+         Emits a renderer-neutral `registry/` handoff.
+|Conformance |`bin/registry-validate` (any candidate catalog) and
+         `bin/registry-conformance` (any built site) — the executable
+         Registry Frontend Conformance Profile
+         (link:docs/conformance-profile.md[docs/conformance-profile.md]).
+|===
+
+`fixtures/seed/` is a golden, hand-written producer (no gem, no network);
+`fixtures/second-renderer/` is a Python-stdlib renderer that passes the
+same conformance suite as the reference Jekyll renderer — proof that the
+contract, not any particular stack, defines the frontend.
+
+== Quick start
+
+[source,sh]
+----
+bundle install
+bundle exec rake             # spec + conformance + validate (fixtures)
+bundle exec rake conformance # enrich fixtures, certify the second renderer
+bin/registry-validate path/to/catalog.json --files path/to/docs --urn-namespace yourorg
+bin/registry-conformance check path/to/built-site --expect path/to/catalog.json
+----
+
+== Becoming an instance
+
+Read link:docs/instance-guide.md[docs/instance-guide.md]. The reference
+instance is
+https://github.com/CalConnect/standards.calconnect.org[CalConnect's
+standards registry] — 192 documents, Jekyll reference renderer, certified
+on every build.
+
+== Layout
+
+```
+schema/       the contract (versioned $ids)
+lib/registry/ enrichment engine + rules + consistency + conformance
+bin/          registry-validate, registry-conformance
+fixtures/     golden seed producer + second renderer
+docs/         conformance profile, instance guide
+spec/         engine + contract specs
+.github/      CI + the reusable registry-build workflow
+```
+
+== Governance
+
+Additive-only within schema major versions. Schema and engine changes by
+PR; instances pin a version and upgrade deliberately.
+
+== License
+
+BSD-2-Clause.

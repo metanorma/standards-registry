@@ -1,0 +1,45 @@
+name: ci
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  engine:
+    name: Engine + contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+      - run: bundle exec rspec
+
+  conformance:
+    name: Conformance + validator
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+      - name: Enrich golden fixtures, certify second renderer, validate CLI
+        run: bundle exec rake conformance validate
+
+  schema-served:
+    name: Schemas resolve over HTTP
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pages serves the contract at its $id path
+        run: |
+          base="https://metanorma.github.io/standards-registry"
+          for path in registry/documents-index/v1.json registry/search-index/v1.json; do
+            url="$base/$path"
+            code=$(curl -sL -o /tmp/served.json -w "%{http_code}" "$url")
+            echo "$url -> $code"
+            [ "$code" = "200" ] || { echo "::error::$url not served"; exit 1; }
+            python3 -c "import json; json.load(open('/tmp/served.json'))"
+          done
