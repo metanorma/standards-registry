@@ -1,5 +1,5 @@
 source: local
-output_dir: fixtures/seed/producer
+output_dir: producer
 file_routing: flat
 cache_dir: .cache/aggregate
 
