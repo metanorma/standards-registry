@@ -58,7 +58,7 @@ module Registry
     # The bundled contract schema — the single authoritative copy, owned
     # by this product (served from the product repo's Pages).
     def schema_path
-      File.expand_path("../../schema/documents-index.schema.json", __FILE__)
+      File.expand_path("../../../schema/documents-index.schema.json", __FILE__)
     end
 
     def feature?(name, default: true)
