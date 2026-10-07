@@ -34,7 +34,8 @@ module Registry
       @features = registry["features"] || {}
       @license_default = registry["license_default"]
       @display_categories = aggregate["display_categories"] || []
-      @output_dir = aggregate["output_dir"] || "_site/docs"
+      @output_dir = resolve_relative(aggregate["output_dir"] || "_site/docs",
+                                     aggregate_config_path)
       @registry_dir = registry_dir
       @generator_label = generator_label
     end
@@ -78,6 +79,12 @@ module Registry
     end
 
     private
+
+    # Paths declared in an aggregate config are relative to that config
+    # file, not to whatever directory the process happens to run in.
+    def resolve_relative(path, base_file)
+      File.expand_path(path, File.dirname(File.expand_path(base_file)))
+    end
 
     def load_yaml(path)
       File.exist?(path) ? (YAML.safe_load_file(path) || {}) : {}
