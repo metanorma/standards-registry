@@ -26,6 +26,7 @@ module Registry
       items = build_items(load_producer_items)
       items = deduplicate(items)
       attach_urls_and_editions(items)
+      items = sort_canonically(items)
       record_cross_item_issues(items)
 
       catalog = Catalog.new(meta: catalog_meta, items: items)
@@ -98,6 +99,13 @@ module Registry
       }
       record_field_gaps(item)
       item
+    end
+
+    # Producers iterate repos in whatever order discovery returns, which
+    # is not stable across runs; downstream ties (same publication date)
+    # would otherwise shuffle. The catalog carries one canonical order.
+    def sort_canonically(items)
+      items.sort_by { |item| [item["date"].to_s, item["edition"].to_s, item["slug"]] }
     end
 
     def attach_urls_and_editions(items)
