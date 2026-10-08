@@ -19,7 +19,8 @@ The three pieces:
 |===
 |Piece |What it is
 |Contract |`schema/documents-index.schema.json` — the versioned catalog payload
-         (`$id: https://schemas.metanorma.org/registry/documents-index/v1.json`)
+         (`$id: https://schemas.metanorma.org/registry/documents-index/v1.json`,
+         served at its $id path by https://github.com/metanorma/schemas[metanorma/schemas])
          and `schema/search-index.schema.json` for the derived search view.
          **Any generator conforming to the schema is a valid producer.**
 |Engine |`lib/registry` — post-aggregation enrichment: Relaton is the canonical

@@ -37,7 +37,7 @@ jobs:
             <li><a href="/standards-registry/registry/documents-index/v1.json">/registry/documents-index/v1.json</a></li>
             <li><a href="/standards-registry/registry/search-index/v1.json">/registry/search-index/v1.json</a></li>
           </ul>
-          <p>Canonical host: https://schemas.metanorma.org (DNS pending org setup).</p>
+          <p>Canonical host: https://schemas.metanorma.org (served by metanorma/schemas; this Pages is the staging origin).</p>
           </body></html>
           HTML
 
