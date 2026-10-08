@@ -58,6 +58,13 @@ RSpec.describe "Fixture producer contract" do
     expect(result.backfill.empty?).to be(false)
   end
 
+  it "projects relations and keywords from Relaton" do
+    item = result.catalog.items.find { |i| i["slug"] == "fx-1001-2024" }
+    expect(item["relations"]).to eq([{ "type" => "updates", "id" => "Fx 1001:2022",
+                                       "date" => "2022-11-15", "edition" => "1" }])
+    expect(item["keywords"]).to eq(["calendar systems", "interoperability"])
+  end
+
   it "derives the search index as a subset view" do
     documents = result.search_index.to_h["documents"]
     expect(documents.length).to eq(3)

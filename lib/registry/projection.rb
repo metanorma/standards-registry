@@ -120,6 +120,30 @@ module Registry
       end.first
     end
 
+    def relations(bib)
+      array(bib["relation"]).filter_map do |entry|
+        next unless entry.is_a?(Hash)
+
+        target = primary_docidentifier(entry["bibitem"] || {}) ||
+                 array(entry.dig("bibitem", "docidentifier")).first&.then { |d| d.is_a?(Hash) ? d["content"] : d }
+        next if target.to_s.strip.empty?
+
+        bibitem = entry["bibitem"] || {}
+        date = array(bibitem["date"]).find { |d| d.is_a?(Hash) && d["type"] == "published" } || array(bibitem["date"]).first
+        {
+          "type" => entry["type"].to_s,
+          "id" => target,
+          "date" => date.is_a?(Hash) ? date["at"].to_s.split(/[T ]/).first : nil,
+          "edition" => bibitem["edition"].is_a?(Hash) ? bibitem["edition"]["content"] : bibitem["edition"],
+        }.compact
+      end.then { |list| list.empty? ? nil : list }
+    end
+
+    def keywords(bib)
+      words = array(bib["keyword"]).map { |k| k.is_a?(Hash) ? k["content"] : k }.compact.map(&:to_s).map(&:strip).reject(&:empty?)
+      words.empty? ? nil : words.uniq
+    end
+
     def relaton_schema_version(bib)
       version = bib["schema_version"]
       version.to_s.empty? ? nil : version

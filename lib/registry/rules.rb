@@ -57,6 +57,8 @@ module Registry
       add("items[#{slug}].committee", item["committee"], Projection.committee(bib))
       add("items[#{slug}].relaton_schema_version", item["relaton_schema_version"],
           Projection.relaton_schema_version(bib))
+      add("items[#{slug}].relations", item["relations"], Projection.relations(bib)) if bib["relation"]
+      add("items[#{slug}].keywords", item["keywords"], Projection.keywords(bib)) if bib["keyword"]
       if @display_categories
         add("items[#{slug}].display_category_slug", item["display_category_slug"],
             display_category_for(item["doctype"])&.fetch("slug", nil))

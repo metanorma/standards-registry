@@ -92,6 +92,8 @@ module Registry
         "display_category" => category && category["name"],
         "display_category_slug" => category && category["slug"],
         "relaton_schema_version" => Projection.relaton_schema_version(bib),
+        "relations" => Projection.relations(bib),
+        "keywords" => Projection.keywords(bib),
         "files" => build_files(raw),
         "bibliographic" => bib.empty? ? nil : bib,
         "provenance" => provenance(raw),
