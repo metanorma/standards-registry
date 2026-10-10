@@ -20,6 +20,7 @@ parser = OptionParser.new do |opts|
   opts.on("--expect CATALOG", "Cross-check /catalog.json against the producer's catalog") { |v| options[:expect] = v }
   opts.on("--schema SCHEMA", "Validate /catalog.json against a JSON schema") { |v| options[:schema] = v }
   opts.on("--no-html", "Headless mode: skip HTML route checks") { options[:html] = false }
+  opts.on("--base PATH", "Mount path the renderer prefixes rendered URLs with (e.g. /standards)") { |v| options[:base] = v }
 end
 parser.parse!
 
@@ -29,7 +30,8 @@ if command != "check" || ARGV.empty?
 end
 
 report = Registry::Conformance.check(ARGV[0], expect: options[:expect],
-                                     schema_path: options[:schema], html: options[:html])
+                                     schema_path: options[:schema], html: options[:html],
+                                     base: options[:base])
 report.failures.each { |failure| warn "FAIL: #{failure}" }
 puts "#{report.checks} checks run, #{report.failures.length} failures"
 exit(report.passed ? 0 : 1)
