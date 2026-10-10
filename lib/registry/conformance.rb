@@ -24,15 +24,18 @@ module Registry
   class Conformance
     Report = Struct.new(:passed, :failures, :checks, keyword_init: true)
 
-    def self.check(site_dir, expect: nil, schema_path: nil, html: true)
-      new(site_dir, expect: expect, schema_path: schema_path, html: html).run
+    def self.check(site_dir, expect: nil, schema_path: nil, html: true, base: nil)
+      new(site_dir, expect: expect, schema_path: schema_path, html: html, base: base).run
     end
 
-    def initialize(site_dir, expect:, schema_path:, html:)
+    def initialize(site_dir, expect:, schema_path:, html:, base: nil)
       @site_dir = site_dir
       @expect = expect
       @schema_path = schema_path
       @html = html
+      # Mount path a renderer prefixes rendered URLs with (e.g. /standards).
+      # Catalog URLs stay registry-relative; checks accept both spellings.
+      @base = base.to_s.sub(%r{/\z}, "")
       @failures = []
       @checks = 0
     end
@@ -141,7 +144,7 @@ module Registry
       fail_check("landing page for #{item['slug']} does not mention its identifier") unless html.include?(item["id"])
 
       item["files"].each do |file|
-        unless html.include?("\"#{file['url']}\"")
+        unless html.include?("\"#{file['url']}\"") || (@base != "" && html.include?("\"#{@base}#{file['url']}\""))
           fail_check("landing page for #{item['slug']} does not link #{file['url']}")
         end
       end
