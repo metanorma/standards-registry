@@ -36,7 +36,7 @@ The three pieces:
 
 `fixtures/seed/` is a golden, hand-written producer (no gem, no network);
 `fixtures/second-renderer/` is a Python-stdlib renderer that passes the
-same conformance suite as the reference Jekyll renderer — proof that the
+same conformance suite as the reference Astro renderer — proof that the
 contract, not any particular stack, defines the frontend.
 
 == Quick start
@@ -55,7 +55,7 @@ bin/registry-conformance check path/to/built-site --expect path/to/catalog.json
 Read link:docs/instance-guide.md[docs/instance-guide.md]. The reference
 instance is
 https://github.com/CalConnect/standards.calconnect.org[CalConnect's
-standards registry] — 192 documents, Jekyll reference renderer, certified
+standards registry] — 192 documents, Astro reference renderer, certified
 on every build.
 
 == Layout

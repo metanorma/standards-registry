@@ -15,7 +15,7 @@ Gem::Specification.new do |spec|
   spec.homepage = "https://github.com/metanorma/standards-registry"
   spec.license = "BSD-2-Clause"
 
-  spec.files = Dir["lib/**/*.rb"] + Dir["lib/standards-registry/{layouts,templates}/*"] +
+  spec.files = Dir["lib/**/*.rb"] +
                Dir["bin/*"] + Dir["schema/*.json"] +
                Dir["fixtures/**/*"] + Dir["docs/*.md"] + %w[README.md LICENSE]
   spec.bindir = "bin"
