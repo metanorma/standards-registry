@@ -3,7 +3,8 @@
 Normative requirements for a **registry frontend**: the component that
 turns the renderer-neutral handoff (`registry/catalog.json`,
 `registry/search-index.json`, plus the producer's artifact files) into a
-served site. The Jekyll theme in this repository is the **reference
+served site. The Astro renderer of the reference instance
+(CalConnect/standards.calconnect.org) is the **reference
 implementation**; any stack that satisfies this profile is an equally
 valid renderer (`fixtures/second-renderer/` ships a Python example).
 Certification is mechanical:
@@ -11,7 +12,7 @@ Certification is mechanical:
 ```
 bin/registry-conformance check <built-site-dir> \
     [--expect <producer-catalog.json>] \
-    [--schema <_data/schemas/documents.schema.json>] [--no-html]
+    [--schema schema/documents-index.schema.json] [--no-html]
 ```
 
 Exit code 0 = conformant. The checker is the profile, executable.
